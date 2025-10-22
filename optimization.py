@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon
 
-# Configuration
 NUM_SMALL_TRIANGLES = 3
 SMALL_TRIANGLE_LEG = 1.0
 OVERLAP_PENALTY = 300.0
@@ -14,18 +13,13 @@ def create_small_triangle(x, y, leg=SMALL_TRIANGLE_LEG):
     return [[x, y], [x + leg, y], [x, y + leg]]
 
 def compute_minimal_bounding_triangle(positions):
-    # Get all vertices from all small triangles
     all_vertices = []
     for x, y in positions:
         tri_verts = create_small_triangle(x, y)
         all_vertices.extend(tri_verts)
     
-    # Convert to numpy array
     all_vertices = np.array(all_vertices)
     
-    # For each vertex to be inside the triangle with hypotenuse y = size - x,
-    # we need: x + y <= size for all vertices
-    # Therefore: size >= max(x + y) over all vertices
     sum_coords = all_vertices[:, 0] + all_vertices[:, 1]
     bounding_size = np.max(sum_coords)
     
@@ -35,13 +29,10 @@ def create_bounding_triangle(size):
     return [[0, 0], [size, 0], [0, size]]
 
 def compute_loss(params):
-    # Extract parameters (only positions now!)
     positions = params.reshape(3, 2)
     
-    # Compute minimal bounding triangle
     bounding_size = compute_minimal_bounding_triangle(positions)
     
-    # Create Shapely polygons
     small_polys = [Polygon(create_small_triangle(x, y)) for x, y in positions]
     
     # Calculate overlap between small triangles
@@ -51,8 +42,6 @@ def compute_loss(params):
             if small_polys[i].intersects(small_polys[j]):
                 total_overlap += small_polys[i].intersection(small_polys[j]).area
     
-    # Total loss: minimize bounding size (or area), heavily penalize overlaps
-    # Area of right isosceles triangle = 0.5 * leg^2
     bounding_area = 0.5 * bounding_size ** 2
     
     loss = bounding_area + OVERLAP_PENALTY * total_overlap
@@ -72,12 +61,10 @@ def compute_gradients(params, epsilon=EPSILON):
     return gradients
 
 def optimize():
-    # Initialize parameters - only positions now!
     np.random.seed(42)
     positions = np.random.uniform(0.5, 2.0, size=(NUM_SMALL_TRIANGLES, 2))
     params = positions.flatten()
     
-    # Track history
     loss_history = []
     size_history = []
     overlap_history = []
@@ -94,24 +81,18 @@ def optimize():
     
     # Optimization loop
     for iteration in range(NUM_ITERATIONS):
-        # Compute current loss
         loss, bounding_size, overlap = compute_loss(params)
         
-        # Track history
         loss_history.append(loss)
         size_history.append(bounding_size)
         overlap_history.append(overlap)
         
-        # Compute gradients
         gradients = compute_gradients(params)
         
-        # Update parameters
         params = params - LEARNING_RATE * gradients
         
-        # Constrain small triangles to first quadrant (x, y >= 0)
         params = np.maximum(params, 0.0)
         
-        # Print progress
         if iteration % 200 == 0 or iteration == NUM_ITERATIONS - 1:
             print(f"Iter {iteration:4d}: Loss={loss:8.4f}, BoundingSize={bounding_size:6.4f}, "
                   f"Overlap={overlap:.6f}")
@@ -130,7 +111,6 @@ def visualize_result(params):
     positions = params.reshape(3, 2)
     bounding_size = compute_minimal_bounding_triangle(positions)
     
-    # Debug: Check if triangles are actually contained
     all_verts = []
     for x, y in positions:
         all_verts.extend(create_small_triangle(x, y))
@@ -142,14 +122,12 @@ def visualize_result(params):
     
     fig, ax = plt.subplots(figsize=(7, 7))
     
-    # Plot bounding triangle
     bounding_verts = create_bounding_triangle(bounding_size)
     bounding_x = [v[0] for v in bounding_verts] + [bounding_verts[0][0]]
     bounding_y = [v[1] for v in bounding_verts] + [bounding_verts[0][1]]
     ax.plot(bounding_x, bounding_y, 'k-', linewidth=3, label='Minimal Bounding Triangle')
     ax.fill(bounding_x, bounding_y, alpha=0.1, color='gray')
     
-    # Plot small triangles
     colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
     for idx, (x, y) in enumerate(positions):
         verts = create_small_triangle(x, y)
@@ -157,10 +135,6 @@ def visualize_result(params):
         ys = [v[1] for v in verts] + [verts[0][1]]
         ax.fill(xs, ys, alpha=0.6, color=colors[idx], edgecolor='black', 
                 linewidth=2, label=f'Triangle {idx+1}')
-        
-        # Plot vertices as dots for debugging
-        for v in verts:
-            ax.plot(v[0], v[1], 'ko', markersize=5)
     
     ax.set_aspect('equal')
     ax.grid(True, alpha=0.3)
@@ -168,13 +142,11 @@ def visualize_result(params):
     ax.set_xlabel('X', fontsize=12)
     ax.set_ylabel('Y', fontsize=12)
     
-    # Calculate percentage of area used up
     area = (3 * 0.5 * SMALL_TRIANGLE_LEG**2) / (0.5 * bounding_size**2) * 100
     
     ax.set_title(f'Final Configuration (Size: {bounding_size:.4f}, Area Used: {area:.1f}%)', 
                  fontsize=14, fontweight='bold')
     
-    # Set axis limits with some padding
     ax.set_xlim(-0.5, bounding_size + 0.5)
     ax.set_ylim(-0.5, bounding_size + 0.5)
     
@@ -209,9 +181,7 @@ def plot_history(loss_history, size_history, overlap_history):
     plt.show()
 
 if __name__ == "__main__":
-    # Run optimization
     final_params, loss_hist, size_hist, overlap_hist = optimize()
     
-    # Visualize results
     visualize_result(final_params)
     plot_history(loss_hist, size_hist, overlap_hist)
