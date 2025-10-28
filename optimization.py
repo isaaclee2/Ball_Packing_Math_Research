@@ -7,7 +7,7 @@ SMALL_TRIANGLE_LEG = 1.0
 OVERLAP_PENALTY = 300.0
 LEARNING_RATE = 0.001
 NUM_ITERATIONS = 1000
-EPSILON = 0.001  # For finite differences
+EPSILON = 0.001  # For computing gradients
 
 def create_small_triangle(x, y, leg=SMALL_TRIANGLE_LEG):
     return [[x, y], [x + leg, y], [x, y + leg]]
@@ -68,16 +68,8 @@ def optimize():
     loss_history = []
     size_history = []
     overlap_history = []
-    
-    print("=" * 60)
-    print("Triangle Packing - Minimal Bounding Triangle")
-    print("=" * 60)
+
     loss, bounding_size, overlap = compute_loss(params)
-    print(f"Initial State:")
-    print(f"  Loss: {loss:.4f}")
-    print(f"  Bounding Size: {bounding_size:.4f}")
-    print(f"  Overlap: {overlap:.6f}")
-    print("=" * 60)
     
     # Optimization loop
     for iteration in range(NUM_ITERATIONS):
@@ -92,17 +84,8 @@ def optimize():
         params = params - LEARNING_RATE * gradients
         
         params = np.maximum(params, 0.0)
-        
-        if iteration % 200 == 0 or iteration == NUM_ITERATIONS - 1:
-            print(f"Iter {iteration:4d}: Loss={loss:8.4f}, BoundingSize={bounding_size:6.4f}, "
-                  f"Overlap={overlap:.6f}")
     
-    print("=" * 60)
     print("Optimization Complete!")
-    print(f"Final bounding triangle leg length: {bounding_size:.4f}")
-    print(f"Final bounding triangle area: {0.5 * bounding_size**2:.4f}")
-    print(f"Total small triangles area: {3 * 0.5 * SMALL_TRIANGLE_LEG**2:.4f}")
-    print(f"Packing efficiency: {(3 * 0.5 * SMALL_TRIANGLE_LEG**2) / (0.5 * bounding_size**2) * 100:.2f}%")
     print("=" * 60)
     
     return params, loss_history, size_history, overlap_history
