@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon
+from matplotlib.widgets import Slider
 
 NUM_SMALL_TRIANGLES = 3
 SMALL_TRIANGLE_LEG = 1.0
@@ -68,6 +69,7 @@ def optimize():
     loss_history = []
     size_history = []
     overlap_history = []
+    all_configs = []
 
     loss, bounding_size, overlap = compute_loss(params)
     
@@ -78,17 +80,20 @@ def optimize():
         loss_history.append(loss)
         size_history.append(bounding_size)
         overlap_history.append(overlap)
+
+        all_configs.append(params.copy())
         
         gradients = compute_gradients(params)
         
         params = params - LEARNING_RATE * gradients
         
         params = np.maximum(params, 0.0)
+
     
     print("Optimization Complete!")
     print("=" * 60)
     
-    return params, loss_history, size_history, overlap_history
+    return params, loss_history, size_history, overlap_history, all_configs
 
 def visualize_result(params):
     positions = params.reshape(3, 2)
@@ -163,8 +168,52 @@ def plot_history(loss_history, size_history, overlap_history):
     plt.tight_layout()
     plt.show()
 
+def visualization_slider(all_configs):
+    fig, ax = plt.subplots(figsize=(8, 8))
+    plt.subplots_adjust(bottom=0.15)
+
+    ax_slider = plt.axes([0.2, 0.05, 0.6, 0.03])
+    slider = Slider(ax_slider, 'Iteration', 0, NUM_ITERATIONS-1, valinit=0, valstep=1)
+
+    def update(val):
+        iteration = int(slider.val)
+        ax.clear()
+        
+        params = all_configs[iteration]
+        positions = params.reshape(3, 2)
+        bounding_size = compute_minimal_bounding_triangle(positions)
+        
+        # Draw bounding triangle
+        bounding_verts = create_bounding_triangle(bounding_size)
+        bounding_x = [v[0] for v in bounding_verts] + [bounding_verts[0][0]]
+        bounding_y = [v[1] for v in bounding_verts] + [bounding_verts[0][1]]
+        ax.plot(bounding_x, bounding_y, 'k-', linewidth=3, label='Bounding')
+        ax.fill(bounding_x, bounding_y, alpha=0.1, color='gray')
+        
+        # Draw small triangles
+        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
+        for idx, (x, y) in enumerate(positions):
+            verts = create_small_triangle(x, y)
+            xs = [v[0] for v in verts] + [verts[0][0]]
+            ys = [v[1] for v in verts] + [verts[0][1]]
+            ax.fill(xs, ys, alpha=0.6, color=colors[idx], edgecolor='black', linewidth=2)
+        
+        ax.set_aspect('equal')
+        ax.grid(True, alpha=0.3)
+        ax.set_title(f'Iteration {iteration} - Bounding Size: {bounding_size:.4f}', fontsize=14)
+        ax.set_xlim(-0.5, 4)
+        ax.set_ylim(-0.5, 4)
+        
+        fig.canvas.draw_idle()
+    
+    slider.on_changed(update)
+    update(0)
+    plt.show()
+
 if __name__ == "__main__":
-    final_params, loss_hist, size_hist, overlap_hist = optimize()
+    final_params, loss_hist, size_hist, overlap_hist, all_configs = optimize()
     
     visualize_result(final_params)
     plot_history(loss_hist, size_hist, overlap_hist)
+
+    visualization_slider(all_configs)
