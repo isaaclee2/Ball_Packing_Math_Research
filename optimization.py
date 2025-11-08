@@ -7,7 +7,7 @@ NUM_SMALL_TRIANGLES = 3
 SMALL_TRIANGLE_LEG = 1.0
 OVERLAP_PENALTY = 300.0
 LEARNING_RATE = 0.001
-NUM_ITERATIONS = 1000
+NUM_ITERATIONS = 1500
 EPSILON = 0.001  # For computing gradients
 
 def create_small_triangle(x, y, leg=SMALL_TRIANGLE_LEG):
@@ -30,7 +30,7 @@ def create_bounding_triangle(size):
     return [[0, 0], [size, 0], [0, size]]
 
 def compute_loss(params):
-    positions = params.reshape(3, 2)
+    positions = params.reshape(NUM_SMALL_TRIANGLES, 2)
     
     bounding_size = compute_minimal_bounding_triangle(positions)
     
@@ -63,7 +63,7 @@ def compute_gradients(params, epsilon=EPSILON):
 
 def optimize():
     np.random.seed(42)
-    positions = np.random.uniform(0.5, 2.0, size=(NUM_SMALL_TRIANGLES, 2))
+    positions = np.random.uniform(0.5, 3.0, size=(NUM_SMALL_TRIANGLES, 2))
     params = positions.flatten()
     
     loss_history = []
@@ -96,7 +96,7 @@ def optimize():
     return params, loss_history, size_history, overlap_history, all_configs
 
 def visualize_result(params):
-    positions = params.reshape(3, 2)
+    positions = params.reshape(NUM_SMALL_TRIANGLES, 2)
     bounding_size = compute_minimal_bounding_triangle(positions)
     
     all_verts = []
@@ -116,12 +116,13 @@ def visualize_result(params):
     ax.plot(bounding_x, bounding_y, 'k-', linewidth=3, label='Minimal Bounding Triangle')
     ax.fill(bounding_x, bounding_y, alpha=0.1, color='gray')
     
-    colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
+    # colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
+    color = '#45B7D1'
     for idx, (x, y) in enumerate(positions):
         verts = create_small_triangle(x, y)
         xs = [v[0] for v in verts] + [verts[0][0]]
         ys = [v[1] for v in verts] + [verts[0][1]]
-        ax.fill(xs, ys, alpha=0.6, color=colors[idx], edgecolor='black', 
+        ax.fill(xs, ys, alpha=0.6, color=color, edgecolor='black', 
                 linewidth=2, label=f'Triangle {idx+1}')
     
     ax.set_aspect('equal')
@@ -130,7 +131,7 @@ def visualize_result(params):
     ax.set_xlabel('X', fontsize=12)
     ax.set_ylabel('Y', fontsize=12)
     
-    area = (3 * 0.5 * SMALL_TRIANGLE_LEG**2) / (0.5 * bounding_size**2) * 100
+    area = (NUM_SMALL_TRIANGLES * 0.5 * SMALL_TRIANGLE_LEG**2) / (0.5 * bounding_size**2) * 100
     
     ax.set_title(f'Final Configuration (Size: {bounding_size:.4f}, Area Used: {area:.1f}%)', 
                  fontsize=14, fontweight='bold')
@@ -180,7 +181,7 @@ def visualization_slider(all_configs):
         ax.clear()
         
         params = all_configs[iteration]
-        positions = params.reshape(3, 2)
+        positions = params.reshape(NUM_SMALL_TRIANGLES, 2)
         bounding_size = compute_minimal_bounding_triangle(positions)
         
         # Draw bounding triangle
@@ -191,12 +192,13 @@ def visualization_slider(all_configs):
         ax.fill(bounding_x, bounding_y, alpha=0.1, color='gray')
         
         # Draw small triangles
-        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
+        #colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
+        color = '#45B7D1'
         for idx, (x, y) in enumerate(positions):
             verts = create_small_triangle(x, y)
             xs = [v[0] for v in verts] + [verts[0][0]]
             ys = [v[1] for v in verts] + [verts[0][1]]
-            ax.fill(xs, ys, alpha=0.6, color=colors[idx], edgecolor='black', linewidth=2)
+            ax.fill(xs, ys, alpha=0.6, color=color, edgecolor='black', linewidth=2)
         
         ax.set_aspect('equal')
         ax.grid(True, alpha=0.3)
